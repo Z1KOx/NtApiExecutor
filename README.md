@@ -31,5 +31,5 @@ NtAllocateVirtualMemory( GetCurrentProcess(), &memory, 0, &size,
 
 # To clone this project with Git
 ```
-git clone https://github.com/Z1KOx/NtApiExecutor.git
+git clone https://github.com/Z1KOx/NtExecutorAPI.git
 ```
