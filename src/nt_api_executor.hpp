@@ -9,7 +9,7 @@ class NtApiExecutor
 {
 public:
     // Constructor that initializes the module and function names
-    NtApiExecutor( const wchar_t* modName, const char* funcName );
+    explicit NtApiExecutor( const wchar_t* modName, const char* funcName );
     ~NtApiExecutor() = default;
 
     // Deleting copy and move constructors to prevent copying of the executor
