@@ -3,9 +3,17 @@
 NtApiExecutor::NtApiExecutor( const wchar_t* modName, const char* funcName )
     : m_modName( modName ), m_funcName( funcName )
 {
+    std::wcout << skCrypt( L"[*] Loading " ).decrypt()
+               << modName << skCrypt( L"::" ).decrypt()
+               << funcName << skCrypt( "\n" ).decrypt();
+
     m_modBase = getModuleBaseAddr();
     if ( !m_modBase ) {
-        std::wcerr << skCrypt( L"[-] Failed to locate module: " ) << modName << skCrypt( L"\n" );
+        throw std::runtime_error( skCrypt( "Module not found" ).decrypt());
+    }
+
+    if ( !getExportRva() ) {
+        throw std::runtime_error( skCrypt( "Function not found" ).decrypt());
     }
 }
 
@@ -26,15 +34,20 @@ NtApiExecutor::NtApiExecutor( const wchar_t* modName, const char* funcName )
     auto* head = &peb->Ldr->InMemoryOrderModuleList;
     auto* curr = head->Flink;
 
-    while ( curr != head ) 
+    for( curr = curr->Flink; curr != head; curr = curr->Flink )
     {
         auto* entry = CONTAINING_RECORD( curr, LDR_DATA_TABLE_ENTRY, InMemoryOrderLinks );
 
         if ( entry->BaseDllName.Buffer &&
-            _wcsicmp( entry->BaseDllName.Buffer, m_modName ) == 0 ) {
+            _wcsicmp( entry->BaseDllName.Buffer, m_modName ) == 0 ) 
+        {
+            std::wcout << skCrypt( L"[+] Found " ).decrypt()
+                       << entry->BaseDllName.Buffer
+                       << skCrypt( L" : 0x" ).decrypt()
+                       << std::hex << reinterpret_cast<uintptr_t>( entry->DllBase )
+                       << skCrypt( L"\n" ).decrypt();
             return entry->DllBase;
         }
-        curr = curr->Flink;
     }
     return nullptr;
 }

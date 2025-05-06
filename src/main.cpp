@@ -8,40 +8,44 @@ typedef VOID( __stdcall* RtlInitUnicodeString_t )( PUNICODE_STRING, PCWSTR );
 
 int main()
 {
-    NtApiExecutor ntdll( skCrypt( L"ntdll.dll" ), skCrypt( "NtCreateFile" ) );
-    auto NtCreateFile = ntdll.resolveFunction<NtCreateFile_t>();
+    try
+    {
+        NtApiExecutor ntdll( skCrypt( L"ntdll.dll" ), skCrypt( "NtCreateFile" ) );
+        const auto NtCreateFile = ntdll.resolveFunction<NtCreateFile_t>();
+        if ( !NtCreateFile ) { throw std::runtime_error( "NtCreateFile not resolved." ); }
 
-    NtApiExecutor rtl(skCrypt( L"ntdll.dll" ), skCrypt( "RtlInitUnicodeString" ) );
-    auto RtlInitUnicodeString = rtl.resolveFunction<RtlInitUnicodeString_t>();
+        NtApiExecutor rtl( skCrypt( L"ntdll.dll" ), skCrypt( "RtlInitUnicodeString" ) );
+        const auto RtlInitUnicodeString = rtl.resolveFunction<RtlInitUnicodeString_t>();
+        if ( !RtlInitUnicodeString ) { throw std::runtime_error( "RtlInitUnicodeString not resolved." ); }
 
-    if (!NtCreateFile || !RtlInitUnicodeString) {
-        std::wcerr << skCrypt( L"[-] Failed to resolve functions\n" ).decrypt();
-        return 1;
+        UNICODE_STRING uniStr = { 0 };
+        OBJECT_ATTRIBUTES objAttr = { 0 };
+        IO_STATUS_BLOCK ioStatus = { 0 };
+        HANDLE hFile = nullptr;
+
+        RtlInitUnicodeString( &uniStr, skCrypt( L"\\??\\C:\\test.txt" ) );
+        InitializeObjectAttributes( &objAttr, &uniStr, OBJ_CASE_INSENSITIVE, nullptr, nullptr );
+
+        ntdll.call(
+            NtCreateFile,
+            &hFile,
+            FILE_GENERIC_WRITE,
+            &objAttr,
+            &ioStatus,
+            nullptr,
+            FILE_ATTRIBUTE_NORMAL,
+            FILE_SHARE_READ,
+            FILE_OVERWRITE_IF,
+            FILE_SYNCHRONOUS_IO_NONALERT,
+            nullptr,
+            0
+        );
+
+        if ( hFile ) { CloseHandle( hFile ); }
+    }
+    catch ( const std::exception& e ) {
+        std::cout << e.what() << '\n';
     }
 
-    UNICODE_STRING uniStr;
-    OBJECT_ATTRIBUTES objAttr;
-    IO_STATUS_BLOCK ioStatus;
-    HANDLE hFile = nullptr;
-
-    RtlInitUnicodeString( &uniStr, skCrypt( L"\\??\\C:\\test.txt" ) );
-    InitializeObjectAttributes(&objAttr, &uniStr, OBJ_CASE_INSENSITIVE, nullptr, nullptr);
-
-    ntdll.callNtFunction(
-        NtCreateFile,
-        &hFile,
-        FILE_GENERIC_WRITE,
-        &objAttr,
-        &ioStatus,
-        nullptr,
-        FILE_ATTRIBUTE_NORMAL,
-        FILE_SHARE_READ,
-        FILE_OVERWRITE_IF,
-        FILE_SYNCHRONOUS_IO_NONALERT,
-        nullptr,
-        0
-    );
-
-    if (hFile) { CloseHandle(hFile); }
     return 0;
 }
