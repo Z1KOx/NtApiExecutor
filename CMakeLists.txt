@@ -3,8 +3,9 @@ project( NtFunctionInvoker )
 
 set( CMAKE_CXX_STANDARD 20 )
 
-set(NtFunctionInvoker_src
+set( NtFunctionInvoker_src
 	"src/main.cpp"
+	"src/nt_api_executor.cpp"
 	"src/typedefs.h"
 )
 
